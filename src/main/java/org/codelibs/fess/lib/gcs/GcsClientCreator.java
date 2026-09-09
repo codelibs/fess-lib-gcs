@@ -1,0 +1,84 @@
+/*
+ * Copyright 2012-2025 CodeLibs Project and the Others.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND,
+ * either express or implied. See the License for the specific language
+ * governing permissions and limitations under the License.
+ */
+package org.codelibs.fess.lib.gcs;
+
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+import org.codelibs.fess.crawler.client.CrawlerClientCreator;
+import org.codelibs.fess.crawler.container.CrawlerContainer;
+import org.codelibs.fess.helper.ProtocolHelper;
+import org.codelibs.fess.util.ComponentUtil;
+
+import jakarta.annotation.Resource;
+
+/**
+ * Makes {@code gcs:} URLs crawlable once this plugin is installed.
+ *
+ * <p>Fess registers no client for {@code gcs:} on its own, and its default
+ * {@code crawler.file.protocols} does not list the scheme, so both have to be added here. This runs
+ * from the {@code postConstruct} of crawler/client++.xml, in each of the four processes that build
+ * the container: the webapp validates crawling paths against the protocol list, and the crawler
+ * process is the one that actually needs the client.</p>
+ */
+public class GcsClientCreator {
+
+    private static final Logger logger = LogManager.getLogger(GcsClientCreator.class);
+
+    /** Protocol of the URLs this plugin handles, without the colon. */
+    protected static final String PROTOCOL = "gcs";
+
+    /** URL pattern the crawler client is registered for. */
+    protected static final String URL_PATTERN = "gcs:.*";
+
+    /** The crawler container, which owns crawlerClientCreator and the client component. */
+    @Resource
+    protected CrawlerContainer crawlerContainer;
+
+    /**
+     * Default constructor.
+     */
+    public GcsClientCreator() {
+        // Default constructor
+    }
+
+    /**
+     * Registers the crawler client and adds the protocol to the file protocol list.
+     *
+     * @param componentName the name of the crawler client component to register
+     */
+    public void register(final String componentName) {
+        final CrawlerClientCreator creator = crawlerContainer.getComponent("crawlerClientCreator");
+        if (creator == null) {
+            throw new IllegalStateException("crawlerClientCreator is not available, so " + URL_PATTERN + " cannot be mapped to "
+                    + componentName + ". Check that crawler/client.xml is included by app.xml.");
+        }
+        creator.register(URL_PATTERN, componentName);
+
+        // ProtocolHelper reads crawler.file.protocols in its own postConstruct, and app.xml includes
+        // fess.xml before crawler/client.xml, so the helper is already initialized here. addFileProtocol
+        // is idempotent, which matters because the configured value may already list the protocol.
+        final ProtocolHelper protocolHelper = ComponentUtil.getProtocolHelper();
+        if (protocolHelper != null) {
+            protocolHelper.addFileProtocol(PROTOCOL);
+        } else if (logger.isDebugEnabled()) {
+            logger.debug("protocolHelper is unavailable, so {}: was not added to the file protocols.", PROTOCOL);
+        }
+
+        if (logger.isDebugEnabled()) {
+            logger.debug("Registered {} as {} and added {}: to the file protocols.", URL_PATTERN, componentName, PROTOCOL);
+        }
+    }
+}

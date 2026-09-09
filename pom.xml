@@ -1,0 +1,324 @@
+<?xml version="1.0"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+	<modelVersion>4.0.0</modelVersion>
+	<artifactId>fess-lib-gcs</artifactId>
+	<packaging>jar</packaging>
+	<name>GCS Library Plugin</name>
+	<version>15.9.0-SNAPSHOT</version>
+	<description>Google Cloud Storage support for Fess: the storage client behind storage.type=gcs and the crawler client behind gcs: URLs.</description>
+	<scm>
+		<connection>scm:git:git@github.com:codelibs/fess-lib-gcs.git</connection>
+		<developerConnection>scm:git:git@github.com:codelibs/fess-lib-gcs.git</developerConnection>
+		<url>https://github.com/codelibs/fess-lib-gcs</url>
+		<tag>HEAD</tag>
+	</scm>
+	<parent>
+		<groupId>org.codelibs.fess</groupId>
+		<artifactId>fess-parent</artifactId>
+		<version>15.9.0-SNAPSHOT</version>
+		<relativePath />
+	</parent>
+	<build>
+		<plugins>
+			<plugin>
+				<artifactId>maven-compiler-plugin</artifactId>
+			</plugin>
+			<plugin>
+				<artifactId>maven-source-plugin</artifactId>
+			</plugin>
+			<plugin>
+				<artifactId>maven-jar-plugin</artifactId>
+				<configuration>
+					<archive>
+						<manifest>
+							<addDefaultImplementationEntries>true</addDefaultImplementationEntries>
+						</manifest>
+						<manifestEntries>
+							<!-- Mounts this jar into the webapp class loader (FessWebResourceRoot). The
+							     storage client is used from the admin UI, so the webapp has to see it; the
+							     crawler, thumbnail, suggest and chunk processes get WEB-INF/plugin on their
+							     class path regardless of this entry. -->
+							<Fess-WebAppJar>true</Fess-WebAppJar>
+						</manifestEntries>
+					</archive>
+				</configuration>
+			</plugin>
+			<plugin>
+				<artifactId>maven-shade-plugin</artifactId>
+				<executions>
+					<execution>
+						<phase>package</phase>
+						<goals>
+							<goal>shade</goal>
+						</goals>
+						<configuration>
+							<createDependencyReducedPom>false</createDependencyReducedPom>
+							<!-- No relocation. GcsClient and the gcs: URL handler live in fess-crawler,
+							     outside this jar, and resolve com.google.cloud.storage by its real name.
+							     Relocating would leave them with nothing to bind to. -->
+							<artifactSet>
+								<!-- What the war already carries. Declaring org.codelibs.fess:fess as provided
+								     does not express this, because provided scope is not transitive: Fess's own
+								     dependencies do not reach this build at all, so every jar the SDK needs
+								     arrives at compile scope and would be shaded.
+								     Each entry below is an artifact the war still ships, in some cases at a
+								     different version (gson, protobuf-java, grpc, errorprone, j2objc, woodstox,
+								     stax2). WEB-INF/lib precedes WEB-INF/plugin on every class path Fess builds,
+								     so a shaded copy of these would never be read: leaving them out keeps one
+								     version of each class in the installation and the combined class path equal
+								     to what the war had before the split.
+								     Under-excluding wastes space; over-excluding fails at run time with
+								     NoClassDefFoundError, so verify against `mvn dependency:list` on Fess before
+								     adding an entry. com.google.api and com.google.http-client are listed per
+								     artifact because gax, gax-httpjson and google-http-client-appengine left the
+								     war and have to ship here. -->
+								<excludes>
+									<exclude>com.fasterxml.jackson.core:*</exclude>
+									<exclude>com.fasterxml.woodstox:woodstox-core</exclude>
+									<exclude>com.google.api-client:*</exclude>
+									<exclude>com.google.api:api-common</exclude>
+									<exclude>com.google.auth:*</exclude>
+									<exclude>com.google.auto.value:*</exclude>
+									<exclude>com.google.code.findbugs:*</exclude>
+									<exclude>com.google.code.gson:*</exclude>
+									<exclude>com.google.errorprone:*</exclude>
+									<exclude>com.google.guava:*</exclude>
+									<exclude>com.google.http-client:google-http-client</exclude>
+									<exclude>com.google.http-client:google-http-client-apache-v2</exclude>
+									<exclude>com.google.http-client:google-http-client-gson</exclude>
+									<exclude>com.google.http-client:google-http-client-jackson2</exclude>
+									<exclude>com.google.j2objc:*</exclude>
+									<exclude>com.google.oauth-client:*</exclude>
+									<exclude>com.google.protobuf:protobuf-java</exclude>
+									<exclude>commons-codec:*</exclude>
+									<exclude>commons-logging:*</exclude>
+									<exclude>io.grpc:*</exclude>
+									<exclude>io.opencensus:*</exclude>
+									<exclude>org.apache.httpcomponents:*</exclude>
+									<exclude>org.codehaus.woodstox:stax2-api</exclude>
+									<exclude>org.jspecify:*</exclude>
+									<exclude>org.slf4j:*</exclude>
+								</excludes>
+							</artifactSet>
+							<filters>
+								<filter>
+									<artifact>*:*</artifact>
+									<excludes>
+										<exclude>META-INF/*.SF</exclude>
+										<exclude>META-INF/*.DSA</exclude>
+										<exclude>META-INF/*.RSA</exclude>
+										<exclude>module-info.class</exclude>
+									</excludes>
+								</filter>
+							</filters>
+							<transformers>
+								<transformer implementation="org.apache.maven.plugins.shade.resource.ServicesResourceTransformer" />
+							</transformers>
+						</configuration>
+					</execution>
+				</executions>
+			</plugin>
+			<plugin>
+				<artifactId>maven-javadoc-plugin</artifactId>
+			</plugin>
+			<plugin>
+				<groupId>com.mycila</groupId>
+				<artifactId>license-maven-plugin</artifactId>
+			</plugin>
+			<plugin>
+				<groupId>net.revelc.code.formatter</groupId>
+				<artifactId>formatter-maven-plugin</artifactId>
+			</plugin>
+		</plugins>
+	</build>
+	<!-- Fess plugins are distributed through maven.codelibs.org instead of Maven Central.
+	     This cannot be inherited from fess-parent: distributionManagement is inherited
+	     unconditionally, so declaring it there would also redirect the SNAPSHOT
+	     deployments of fess-parent, fess, fess-crawler, fess-crawler-playwright and
+	     fess-suggest, which stay on Maven Central. The scpexe transport comes from
+	     the wagon-ssh-external build extension inherited from fess-parent. -->
+	<distributionManagement>
+		<repository>
+			<id>codelibs-repo</id>
+			<name>CodeLibs Repository</name>
+			<url>scpexe://maven.codelibs.org/var/www/maven/release</url>
+		</repository>
+		<snapshotRepository>
+			<id>codelibs-snapshots</id>
+			<name>CodeLibs Snapshot Repository</name>
+			<url>scpexe://maven.codelibs.org/var/www/maven/snapshot</url>
+		</snapshotRepository>
+	</distributionManagement>
+	<repositories>
+		<repository>
+			<id>snapshots.central.sonatype.com</id>
+			<url>https://central.sonatype.com/repository/maven-snapshots</url>
+			<releases>
+				<enabled>false</enabled>
+			</releases>
+			<snapshots>
+				<enabled>true</enabled>
+			</snapshots>
+		</repository>
+	</repositories>
+	<dependencies>
+		<!-- Declared before google-cloud-storage on purpose. Everything Fess ships arrives here as
+		     a provided transitive dependency, and a provided node beats a compile node of the same
+		     artifact at the same depth by declaration order, so the shade below picks up only what
+		     the war does not already carry. -->
+		<dependency>
+			<groupId>org.codelibs.fess</groupId>
+			<artifactId>fess</artifactId>
+			<version>${fess.version}</version>
+			<scope>provided</scope>
+		</dependency>
+		<dependency>
+			<!-- CrawlerClientCreator and CrawlerContainer, for registering GcsClient. GcsClient
+			     itself stays in this library and is named only from crawler/client++.xml. -->
+			<groupId>org.codelibs.fess</groupId>
+			<artifactId>fess-crawler</artifactId>
+			<version>${crawler.version}</version>
+			<scope>provided</scope>
+		</dependency>
+		<dependency>
+			<groupId>jakarta.annotation</groupId>
+			<artifactId>jakarta.annotation-api</artifactId>
+			<version>${jakarta.annotation.api.version}</version>
+			<scope>provided</scope>
+		</dependency>
+		<dependency>
+			<groupId>com.google.cloud</groupId>
+			<artifactId>google-cloud-storage</artifactId>
+			<version>${google.cloud.storage.version}</version>
+			<exclusions>
+				<exclusion>
+					<groupId>io.grpc</groupId>
+					<artifactId>grpc-inprocess</artifactId>
+				</exclusion>
+				<exclusion>
+					<groupId>io.grpc</groupId>
+					<artifactId>grpc-alts</artifactId>
+				</exclusion>
+				<exclusion>
+					<groupId>io.grpc</groupId>
+					<artifactId>grpc-auth</artifactId>
+				</exclusion>
+				<exclusion>
+					<groupId>io.grpc</groupId>
+					<artifactId>grpc-core</artifactId>
+				</exclusion>
+				<exclusion>
+					<groupId>io.grpc</groupId>
+					<artifactId>grpc-protobuf</artifactId>
+				</exclusion>
+				<exclusion>
+					<groupId>io.grpc</groupId>
+					<artifactId>grpc-protobuf-lite</artifactId>
+				</exclusion>
+				<exclusion>
+					<groupId>io.grpc</groupId>
+					<artifactId>grpc-opentelemetry</artifactId>
+				</exclusion>
+				<exclusion>
+					<groupId>io.grpc</groupId>
+					<artifactId>grpc-grpclb</artifactId>
+				</exclusion>
+				<exclusion>
+					<groupId>io.grpc</groupId>
+					<artifactId>grpc-netty-shaded</artifactId>
+				</exclusion>
+				<exclusion>
+					<groupId>io.grpc</groupId>
+					<artifactId>grpc-util</artifactId>
+				</exclusion>
+				<exclusion>
+					<groupId>io.grpc</groupId>
+					<artifactId>grpc-stub</artifactId>
+				</exclusion>
+				<exclusion>
+					<groupId>io.grpc</groupId>
+					<artifactId>grpc-googleapis</artifactId>
+				</exclusion>
+				<exclusion>
+					<groupId>io.grpc</groupId>
+					<artifactId>grpc-xds</artifactId>
+				</exclusion>
+				<exclusion>
+					<groupId>io.grpc</groupId>
+					<artifactId>grpc-services</artifactId>
+				</exclusion>
+				<exclusion>
+					<groupId>io.grpc</groupId>
+					<artifactId>grpc-rls</artifactId>
+				</exclusion>
+				<exclusion>
+					<groupId>com.google.api</groupId>
+					<artifactId>gax-grpc</artifactId>
+				</exclusion>
+				<exclusion>
+					<groupId>com.google.cloud</groupId>
+					<artifactId>google-cloud-core-grpc</artifactId>
+				</exclusion>
+				<exclusion>
+					<groupId>com.google.cloud</groupId>
+					<artifactId>google-cloud-monitoring</artifactId>
+				</exclusion>
+				<exclusion>
+					<groupId>com.google.api.grpc</groupId>
+					<artifactId>proto-google-cloud-monitoring-v3</artifactId>
+				</exclusion>
+				<exclusion>
+					<groupId>com.google.api.grpc</groupId>
+					<artifactId>grpc-google-cloud-storage-v2</artifactId>
+				</exclusion>
+				<exclusion>
+					<groupId>com.google.api.grpc</groupId>
+					<artifactId>gapic-google-cloud-storage-v2</artifactId>
+				</exclusion>
+				<exclusion>
+					<groupId>com.google.cloud.opentelemetry</groupId>
+					<artifactId>exporter-metrics</artifactId>
+				</exclusion>
+				<exclusion>
+					<groupId>io.opentelemetry.contrib</groupId>
+					<artifactId>opentelemetry-gcp-resources</artifactId>
+				</exclusion>
+				<exclusion>
+					<groupId>io.opentelemetry</groupId>
+					<artifactId>opentelemetry-sdk</artifactId>
+				</exclusion>
+				<exclusion>
+					<groupId>io.opentelemetry</groupId>
+					<artifactId>opentelemetry-sdk-trace</artifactId>
+				</exclusion>
+				<exclusion>
+					<groupId>io.opentelemetry</groupId>
+					<artifactId>opentelemetry-sdk-logs</artifactId>
+				</exclusion>
+				<exclusion>
+					<groupId>io.opentelemetry</groupId>
+					<artifactId>opentelemetry-sdk-metrics</artifactId>
+				</exclusion>
+				<exclusion>
+					<groupId>io.opentelemetry</groupId>
+					<artifactId>opentelemetry-sdk-common</artifactId>
+				</exclusion>
+				<exclusion>
+					<groupId>io.opentelemetry</groupId>
+					<artifactId>opentelemetry-sdk-extension-autoconfigure-spi</artifactId>
+				</exclusion>
+			</exclusions>		</dependency>
+		<dependency>
+			<groupId>org.junit.jupiter</groupId>
+			<artifactId>junit-jupiter-api</artifactId>
+			<version>${junit.jupiter.version}</version>
+			<scope>test</scope>
+		</dependency>
+		<dependency>
+			<groupId>org.junit.jupiter</groupId>
+			<artifactId>junit-jupiter-engine</artifactId>
+			<version>${junit.jupiter.version}</version>
+			<scope>test</scope>
+		</dependency>
+	</dependencies>
+</project>
