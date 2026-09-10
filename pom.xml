@@ -1,15 +1,15 @@
 <?xml version="1.0"?>
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
 	<modelVersion>4.0.0</modelVersion>
-	<artifactId>fess-lib-gcs</artifactId>
+	<artifactId>fess-storage-gcs</artifactId>
 	<packaging>jar</packaging>
-	<name>GCS Library Plugin</name>
+	<name>GCS Storage Plugin</name>
 	<version>15.9.0-SNAPSHOT</version>
 	<description>Google Cloud Storage support for Fess: the storage client behind storage.type=gcs and the crawler client behind gcs: URLs.</description>
 	<scm>
-		<connection>scm:git:git@github.com:codelibs/fess-lib-gcs.git</connection>
-		<developerConnection>scm:git:git@github.com:codelibs/fess-lib-gcs.git</developerConnection>
-		<url>https://github.com/codelibs/fess-lib-gcs</url>
+		<connection>scm:git:git@github.com:codelibs/fess-storage-gcs.git</connection>
+		<developerConnection>scm:git:git@github.com:codelibs/fess-storage-gcs.git</developerConnection>
+		<url>https://github.com/codelibs/fess-storage-gcs</url>
 		<tag>HEAD</tag>
 	</scm>
 	<parent>
@@ -174,7 +174,8 @@
 		</dependency>
 		<dependency>
 			<!-- CrawlerClientCreator and CrawlerContainer, for registering GcsClient. GcsClient
-			     itself stays in this library and is named only from crawler/client++.xml. -->
+			     itself stays in fess-crawler, outside this jar, and is named only as a string
+			     from crawler/client++.xml. -->
 			<groupId>org.codelibs.fess</groupId>
 			<artifactId>fess-crawler</artifactId>
 			<version>${crawler.version}</version>

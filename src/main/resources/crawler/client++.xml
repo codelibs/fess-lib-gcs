@@ -15,7 +15,7 @@
 		<property name="charset">"UTF-8"</property>
 	</component>
 
-	<component name="gcsClientCreator" class="org.codelibs.fess.lib.gcs.GcsClientCreator">
+	<component name="gcsClientCreator" class="org.codelibs.fess.storage.gcs.GcsClientCreator">
 		<postConstruct name="register">
 			<arg>"gcsClient"</arg>
 		</postConstruct>

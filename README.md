@@ -1,6 +1,6 @@
-Google Cloud Storage Library Plugin for Fess
-[![Java CI with Maven](https://github.com/codelibs/fess-lib-gcs/actions/workflows/maven.yml/badge.svg)](https://github.com/codelibs/fess-lib-gcs/actions/workflows/maven.yml)
-============================================
+Google Cloud Storage Plugin for Fess
+[![Java CI with Maven](https://github.com/codelibs/fess-storage-gcs/actions/workflows/maven.yml/badge.svg)](https://github.com/codelibs/fess-storage-gcs/actions/workflows/maven.yml)
+====================================
 
 Google Cloud Storage support for [Fess](https://github.com/codelibs/fess).
 
@@ -17,10 +17,10 @@ SDK, which is about 15 MiB of jars that most installations never use.
 ## Installation
 
 ```
-$ bin/fess-setup install plugin fess-lib-gcs
+$ bin/fess-setup install plugin fess-storage-gcs
 ```
 
-Or download the jar from [maven.codelibs.org](https://maven.codelibs.org/org/codelibs/fess/fess-lib-gcs/)
+Or download the jar from [maven.codelibs.org](https://maven.codelibs.org/org/codelibs/fess/fess-storage-gcs/)
 and put it in `app/WEB-INF/plugin`. Restart Fess afterwards: the components this plugin
 contributes are read when the DI container is built.
 
