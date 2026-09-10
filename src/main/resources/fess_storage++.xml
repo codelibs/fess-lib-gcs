@@ -5,9 +5,9 @@
 	<!-- Merged into Fess's fess_storage.xml. StorageClientFactory looks the client up as
 	     "<storage.type>StorageClient", so this component name is what makes storage.type=gcs work.
 	     A "++" file is additive and is collected from every jar on the class path, so this does not
-	     collide with another fess-lib-* plugin contributing its own client.
+	     collide with another fess-storage-* plugin contributing its own client.
 
 	     Prototype, not singleton: callers take the client in a try-with-resources and close it. -->
-	<component name="gcsStorageClient" class="org.codelibs.fess.lib.gcs.GcsStorageClient" instance="prototype">
+	<component name="gcsStorageClient" class="org.codelibs.fess.storage.gcs.GcsStorageClient" instance="prototype">
 	</component>
 </components>
