@@ -6,8 +6,8 @@ Google Cloud Storage support for [Fess](https://github.com/codelibs/fess).
 
 This plugin provides two things:
 
-* the **storage client** behind `storage.type=gcs`, used by the admin file listing and by
-  thumbnail and file storage
+* the **storage client** behind `storage.type=gcs`, which backs the Storage page of the
+  administration screen and its REST API -- the only callers of `StorageClientFactory` in Fess
 * the **crawler client** behind `gcs:` URLs, so that a file crawling configuration can point at a
   bucket
 
@@ -28,7 +28,10 @@ contributes are read when the DI container is built.
 
 ### Object storage
 
-Set these in the admin general page, or in `fess_config.properties`:
+Set these in the admin general page, or pass them to the JVM as
+`-Dfess.system.storage.type=...`. They are read through `FessProp#getSystemProperty`, which
+looks in `system.properties` and then at `fess.system.<key>` -- not in
+`fess_config.properties`:
 
 | Key | Value |
 | --- | --- |

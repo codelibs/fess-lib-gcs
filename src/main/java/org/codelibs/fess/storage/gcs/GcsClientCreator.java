@@ -19,7 +19,6 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.codelibs.fess.crawler.client.CrawlerClientCreator;
 import org.codelibs.fess.crawler.container.CrawlerContainer;
-import org.codelibs.fess.helper.ProtocolHelper;
 import org.codelibs.fess.util.ComponentUtil;
 
 import jakarta.annotation.Resource;
@@ -42,6 +41,9 @@ public class GcsClientCreator {
 
     /** URL pattern the crawler client is registered for. */
     protected static final String URL_PATTERN = "gcs:.*";
+
+    /** Component key of Fess's ProtocolHelper. ComponentUtil keeps its own copy private. */
+    protected static final String PROTOCOL_HELPER = "protocolHelper";
 
     /** The crawler container, which owns crawlerClientCreator and the client component. */
     @Resource
@@ -68,17 +70,20 @@ public class GcsClientCreator {
         creator.register(URL_PATTERN, componentName);
 
         // ProtocolHelper reads crawler.file.protocols in its own postConstruct, and app.xml includes
-        // fess.xml before crawler/client.xml, so the helper is already initialized here. addFileProtocol
-        // is idempotent, which matters because the configured value may already list the protocol.
-        final ProtocolHelper protocolHelper = ComponentUtil.getProtocolHelper();
-        if (protocolHelper != null) {
-            protocolHelper.addFileProtocol(PROTOCOL);
+        // fess.xml before crawler/client.xml, so the helper is already initialized here.
+        // addFileProtocol is idempotent, which matters because the configured value may already list
+        // the protocol. hasComponent is asked first rather than testing the result for null:
+        // ComponentUtil.getProtocolHelper() throws ComponentNotFoundException when the component is
+        // absent, so a null test would let a container built without fess.xml fail to initialize
+        // over a protocol registration instead of skipping it.
+        if (ComponentUtil.hasComponent(PROTOCOL_HELPER)) {
+            ComponentUtil.getProtocolHelper().addFileProtocol(PROTOCOL);
+            if (logger.isDebugEnabled()) {
+                logger.debug("Registered {} as {} and added {}: to the file protocols.", URL_PATTERN, componentName, PROTOCOL);
+            }
         } else if (logger.isDebugEnabled()) {
-            logger.debug("protocolHelper is unavailable, so {}: was not added to the file protocols.", PROTOCOL);
-        }
-
-        if (logger.isDebugEnabled()) {
-            logger.debug("Registered {} as {} and added {}: to the file protocols.", URL_PATTERN, componentName, PROTOCOL);
+            logger.debug("Registered {} as {}, but protocolHelper is unavailable, so {}: was not added to the file protocols.", URL_PATTERN,
+                    componentName, PROTOCOL);
         }
     }
 }

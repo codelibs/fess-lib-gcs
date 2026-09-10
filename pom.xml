@@ -58,9 +58,10 @@
 							     Relocating would leave them with nothing to bind to. -->
 							<artifactSet>
 								<!-- What the war already carries. Declaring org.codelibs.fess:fess as provided
-								     does not express this, because provided scope is not transitive: Fess's own
-								     dependencies do not reach this build at all, so every jar the SDK needs
-								     arrives at compile scope and would be shaded.
+								     does not keep these out on its own. Fess's own dependencies do reach this
+								     build, as provided nodes, but when Fess and the SDK need the same artifact
+								     Maven keeps Fess's version while widening the scope to the wider of the two,
+								     so the node arrives at compile or runtime instead and would be shaded.
 								     Each entry below is an artifact the war still ships, in some cases at a
 								     different version (gson, protobuf-java, grpc, errorprone, j2objc, woodstox,
 								     stax2). WEB-INF/lib precedes WEB-INF/plugin on every class path Fess builds,
@@ -162,10 +163,11 @@
 		</repository>
 	</repositories>
 	<dependencies>
-		<!-- Declared before google-cloud-storage on purpose. Everything Fess ships arrives here as
-		     a provided transitive dependency, and a provided node beats a compile node of the same
-		     artifact at the same depth by declaration order, so the shade below picks up only what
-		     the war does not already carry. -->
+		<!-- Declared before google-cloud-storage on purpose: Fess's own dependencies then arrive as
+		     provided transitive nodes, and most of what the war carries is therefore left out of
+		     the shade. Ordering does not settle every case: where the two paths disagree Maven
+		     keeps one node and widens its scope, and those arrive at compile or runtime instead.
+		     That is what the exclude list above is for. -->
 		<dependency>
 			<groupId>org.codelibs.fess</groupId>
 			<artifactId>fess</artifactId>
